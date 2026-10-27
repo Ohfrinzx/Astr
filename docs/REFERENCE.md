@@ -61,6 +61,13 @@ from the build environment, so these are summaries of search-result text:
   hostile. Sources differ on what happens next: one says it swoops and leaves,
   another says it comes back in a later stage. We do both: it dives, and if it
   escapes it returns attached to a commander in the next normal stage.
+- While a freed fighter spins and docks, all other action freezes: enemies,
+  enemy shots and your controls. You can't be hit while your ship is held
+  still. **Approximate** (matches how the arcade presents the rescue).
+- If your ship is destroyed just before the host dies (for example, your shot
+  was still in the air), the freed fighter becomes your next ship. It doesn't
+  use a reserve ship, and it stops a game over. **Deviation**, to avoid an
+  unfair loss.
 - No beam while you have a dual fighter or while a captured fighter exists. Only
   one beam at a time. **Approximate.**
 - Beam timing (open 0.8 s, hold 2.5 s, close 0.7 s) and capture width (±18

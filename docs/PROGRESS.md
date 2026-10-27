@@ -34,7 +34,7 @@ tuning (paths, timings, difficulty) and polish.
 - [x] Attract mode: title with score table and settings, top 5, autopilot demo
 - [x] Results screen (shots, hits, ratio) and 3-letter initials entry (keys, typing, or drag/tap)
 - [x] Pause screen with tappable settings
-- [x] Tests: `tools/scenario-test.cjs` (32 rule checks), `tools/smoke-test.cjs`, `tools/trace-paths.cjs`
+- [x] Tests: `tools/scenario-test.cjs` (40 rule checks), `tools/smoke-test.cjs`, `tools/fuzz-test.cjs`, `tools/trace-paths.cjs`
 - [x] Docs: AGENTS.md, ARCHITECTURE.md, REFERENCE.md, this file
 
 ### Next (suggested order)
@@ -57,6 +57,22 @@ tuning (paths, timings, difficulty) and polish.
 
 ## Log
 
+### 2026-10-27 — rescue bug fixes (owner report)
+- Report: "blew up the moment I was supposed to get my captured ship back, then
+  everything froze", and "killed the alien that took my ship, then died, and
+  still lost even though I'd got a ship back".
+- Root cause: during a rescue the player's ship was frozen in place, but enemies
+  and bullets kept moving, so the frozen ship got shot. Then the respawn waited
+  for the rescue to finish, and the rescue waited for a ship to dock with, which
+  deadlocked the game. On the last ship it went to game over instead.
+- Fix (`session.js`):
+  - All action freezes while the freed fighter docks, as in the arcade.
+  - Firing is blocked during the rescue.
+  - A fighter freed when there's no ship in play becomes the next ship, with no
+    reserve used and no game over.
+- Added regression scenarios (40/40 pass) and `tools/fuzz-test.cjs`, which plays
+  seeded games and fails on any hang.
+
 ### 2026-10-27 — initial build
 - Owner's requirements: arcade 1981 gameplay, GitHub Pages, any screen size with
   no bars and no stretching, WASD + Space, touch drag, no mobile clutter, rapid
@@ -65,7 +81,7 @@ tuning (paths, timings, difficulty) and polish.
 - Built the whole engine and gameplay (see checklist). Sprites, font and audio
   were written by sub-agents to fixed interfaces and are original.
 - Verified with headless Chromium: no console errors at 1920x1080, 390x844,
-  844x390 and 1024x768; 32/32 rule scenarios pass; flight paths checked with
+  844x390 and 1024x768; 32/32 rule scenarios passed at the time; flight paths checked with
   trail renders.
 - Owner asked for verified work to be merged into `main` automatically (now in
   AGENTS.md). Before the first merge, also tested it served from the `/Astr/`

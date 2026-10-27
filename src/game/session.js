@@ -265,6 +265,15 @@ export class Session {
     this.phaseT++;
     if (this.message && --this.message.t <= 0) this.message = null;
 
+    // Like the arcade, the action freezes while a freed fighter docks, so the
+    // ship (which is held still) can't be shot or rammed meanwhile.
+    if (this.rescue) {
+      this.updatePlayer(controls);
+      this.updateRescue();
+      this.updateEffects();
+      return;
+    }
+
     switch (this.phase) {
       case 'intro':
         if (this.phaseT === 1) this.say([{ text: 'PLAYER 1', color: '#5ff' }], this.demo ? 60 : 250);
@@ -343,7 +352,7 @@ export class Session {
     p.x = Math.max(minX, Math.min(maxX, p.x));
 
     // Firing
-    if (this.capture || this.phase === 'gameOver') return;
+    if (this.capture || this.rescue || this.phase === 'gameOver') return;
     if (p.cd > 0) p.cd--;
     if (c.touchActive) {
       if (p.cd <= 0 && this.fire()) p.cd = c.rapid ? PLAYER.rapidInterval : PLAYER.touchAutoInterval;
@@ -633,12 +642,17 @@ export class Session {
     const c = host.captive;
     host.captive = null;
     c.host = null;
-    if (host.mode !== 'formation' && this.alive && !this.player.dual && !this.rescue) {
+    // Freed in flight: the fighter comes back to the player. This also works
+    // when the player's ship was destroyed a moment earlier (e.g. by a shot
+    // still in the air): the fighter then becomes the next ship.
+    const canRescue = host.mode !== 'formation' && !this.player.dual && !this.rescue &&
+      this.player.state !== 'captured' && this.phase !== 'gameOver';
+    if (canRescue) {
       c.dead = true;
       this.rescue = { x: c.x, y: c.y, spin: 0, t: 0, phase: 'spin' };
       this.play('rescued');
     } else {
-      // Freed in formation (or nobody to dock with): it turns on the player.
+      // Freed in formation (or a dual fighter already flying): it turns on the player.
       c.mode = 'dive';
       c.row = undefined;
       startProgram(c, DIVES.kamikaze(this.L, c.x > this.L.cx ? 1 : -1, this.stage));
@@ -696,22 +710,33 @@ export class Session {
       return;
     }
     const L = this.L;
-    if (!this.alive) { // hover until a ship is back
-      r.y += Math.sign(L.playerY - 50 - r.y) * 0.8;
+    if (!this.alive) {
+      // No ship in play (it was destroyed just before the rescue): the freed
+      // fighter becomes the player's ship without using one from the reserve.
+      const tx = Math.max(L.left + 8, Math.min(L.right - 8, r.x));
+      if (!this.flyRescue(tx, L.playerY)) return;
+      this.rescue = null;
+      Object.assign(p, { state: 'alive', x: tx, dual: false, touchTarget: null });
+      this.respawn = null;
+      this.message = null;
       return;
     }
     const maxX = L.right - 8 - PLAYER.dualGap;
     if (p.x > maxX) p.x = Math.max(maxX, p.x - PLAYER.speed);
-    const tx = p.x + PLAYER.dualGap, ty = L.playerY;
+    if (!this.flyRescue(p.x + PLAYER.dualGap, L.playerY)) return;
+    this.rescue = null;
+    p.dual = true;
+  }
+
+  // Move the rescued fighter toward (tx, ty); true once it has arrived.
+  flyRescue(tx, ty) {
+    const r = this.rescue;
     const dx = tx - r.x, dy = ty - r.y;
     const d = Math.hypot(dx, dy);
-    if (d <= 2) {
-      this.rescue = null;
-      p.dual = true;
-      return;
-    }
+    if (d <= 2) return true;
     r.x += (dx / d) * Math.min(d, 1.6);
     r.y += (dy / d) * Math.min(d, 1.6);
+    return false;
   }
 
   // ---- shots / effects -----------------------------------------------------------

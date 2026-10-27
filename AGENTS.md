@@ -52,6 +52,7 @@ The owner's requirements (keep these true):
    ```sh
    node tools/scenario-test.cjs        # gameplay rule tests, must be all PASS
    node tools/smoke-test.cjs           # loads 4 screen sizes + 6-minute soak, must print OK
+   node tools/fuzz-test.cjs            # 16 seeded games, fails on any hang/deadlock, must print OK
    node tools/trace-paths.cjs 1 900    # optional: draws flight-path trails to smoke-out/
    ```
    Look at the screenshots in `smoke-out/` when you change visuals or layout.

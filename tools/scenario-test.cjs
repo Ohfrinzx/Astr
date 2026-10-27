@@ -69,6 +69,46 @@ async function scenarios() {
     check(!s.player.dual && s.player.state === 'alive', 'losing one half of the dual fighter keeps the other');
   }
 
+  // Sets up: ship captured, next ship in play, commander diving with the captive.
+  const divingHost = () => {
+    const s = newSession();
+    calm(s);
+    toFormation(s);
+    const boss = s.living.find((e) => e.type === 'commander');
+    s.player.x = L().cx;
+    s.dive(boss, DIVES.beam, s.player.x);
+    run(s, 6000, idle, () => boss.captive && boss.mode === 'formation' && s.player.state === 'alive');
+    s.dive(boss, DIVES.commander);
+    run(s, 600, idle, () => boss.y > L().formationTop + 60);
+    return { s, boss };
+  };
+
+  // --- Regression: enemy fire during a rescue must not kill the docking ship or freeze the game
+  {
+    const { s, boss } = divingHost();
+    s.enemyShots.push({ x: s.player.x, y: L().playerY - 30, vx: 0, vy: 3 }); // already on its way
+    s.hitEnemy(boss); s.hitEnemy(boss);
+    check(s.rescue, 'rescue starts with an enemy shot incoming');
+    check(run(s, 1500, idle, () => !s.rescue), 'rescue completes with an enemy shot incoming');
+    check(s.player.state === 'alive' && s.player.dual, `docking ship is not shot while frozen (state ${s.player.state}, dual ${s.player.dual})`);
+    const before = s.living.map((e) => e.x + e.y).join();
+    run(s, 120);
+    check(s.living.map((e) => e.x + e.y).join() !== before, 'game keeps running after the rescue');
+  }
+
+  // --- Regression: freeing the fighter right after losing the last ship gives that fighter back
+  {
+    const { s, boss } = divingHost();
+    s.reserve = 0;
+    s.hitPlayer({ x: s.player.x, side: 0 });        // last ship destroyed...
+    s.hitEnemy(boss); s.hitEnemy(boss);             // ...and its shot still kills the host
+    check(s.rescue, 'host killed just after the player died still frees the fighter');
+    check(run(s, 1500, idle, () => !s.rescue), 'freed fighter arrives');
+    check(s.player.state === 'alive' && !s.player.dual && s.reserve === 0, `freed fighter becomes the player's ship (state ${s.player.state})`);
+    run(s, 600);
+    check(s.phase !== 'gameOver' && s.player.state === 'alive', `no game over after getting the fighter back (phase ${s.phase})`);
+  }
+
   // --- Host destroyed in formation: captive turns hostile, returns next stage
   {
     const s = newSession();
