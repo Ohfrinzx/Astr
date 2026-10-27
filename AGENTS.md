@@ -58,6 +58,9 @@ The owner's requirements (keep these true):
 4. Update `docs/PROGRESS.md` (log entry + checklist), and `docs/ARCHITECTURE.md`
    if you changed structure or interfaces.
 5. Commit with a clear message.
+6. **Owner's standing instruction:** once the checks in step 3 pass, merge the
+   work into `main` and push it, without waiting to be asked. `main` is what
+   GitHub Pages serves. Never merge work that fails a check.
 
 ## Handy debugging
 

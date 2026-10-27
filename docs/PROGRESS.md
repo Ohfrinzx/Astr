@@ -67,3 +67,7 @@ tuning (paths, timings, difficulty) and polish.
 - Verified with headless Chromium: no console errors at 1920x1080, 390x844,
   844x390 and 1024x768; 32/32 rule scenarios pass; flight paths checked with
   trail renders.
+- Owner asked for verified work to be merged into `main` automatically (now in
+  AGENTS.md). Before the first merge, also tested it served from the `/Astr/`
+  subpath the way GitHub Pages serves it, using real keyboard input (start,
+  move, fire, rapid-fire toggle, pause). It works.
